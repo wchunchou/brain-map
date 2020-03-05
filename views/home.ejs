@@ -1,0 +1,146 @@
+<!DOCTYPE html> 
+<html> 
+  
+<head> 
+    <title>Home Page</title> 
+    <script src="https://d3js.org/d3.v5.js"></script>
+    <style>
+        .state{
+            fill: none;
+            stroke: #555;
+            stroke-width: 3;
+        }
+        .state:hover{
+            fill-opacity:0.5;
+        }
+        #tooltip {   
+            position: absolute;           
+            text-align: center;
+            padding: 20px;             
+            margin: 10px;
+            font: 12px sans-serif;        
+            background: lightsteelblue;   
+            border: 1px;      
+            border-radius: 2px;           
+            pointer-events: none;         
+        }
+        #tooltip h4{
+            margin:0;
+            font-size:14px;
+        }
+        #tooltip{
+            background:rgba(0,0,0,0.9);
+            border:1px solid grey;
+            border-radius:5px;
+            font-size:12px;
+            width:auto;
+            padding:4px;
+            color:white;
+            opacity:0;
+        }
+    </style>
+</head> 
+  
+<body>
+    <div id="tooltip"></div><!-- div to hold tooltip. -->
+    <svg width="600" height="600" id="brainCanvas"></svg> <!-- svg to hold the map. -->
+    <script src="uStates.js"></script> <!-- creates uStates. -->
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script>
+        var radius =6;
+        /* draw slice on id #brainCanvas */	
+        uStates.draw("#brainCanvas");
+        
+        d3.select(self.frameElement).style("height", "600px"); 
+
+        var dataset= [ //circle cordinates
+            { x: 1, y: 1 },
+            { x: 83, y: 43 },
+            { x: 92, y: 28 },
+            { x: 20, y: 30 },
+            { x: 98, y: 98 },
+        ];
+
+        // We're passing in a function in d3.max to tell it what we're maxing (x value)
+        var xScale = d3.scale.linear()
+          .domain([0, 100])
+          .range([0, 600]); 
+        // We're passing in a function in d3.max to tell it what we're maxing (y value)
+        var yScale = d3.scale.linear()
+          .domain([0, 100])
+          .range([0, 600]); 
+        
+        var circleAttrs = {
+          cx: function(d) { return xScale(d.x); },
+          cy: function(d) { return yScale(d.y); },
+          fill: "red",
+          r: radius
+        };
+
+        var svg = d3.select("#brainCanvas")
+
+        //add interaction to the circle
+        svg.selectAll("circle")
+            .data(dataset)
+            .enter()
+            .append("circle")
+            .attr(circleAttrs)  // Get attributes from circleAttrs var
+            .on("mouseover", handleMouseOver)
+            .on("mouseout", handleMouseOut);
+
+        // On Click, we want to add data to the array and chart
+        svg.on("click", function() {
+            var coords = d3.mouse(this);
+            console.log(coords)
+
+            // Normally we go from data to pixels, but here we're doing pixels to data
+            var newData= {
+                x: Math.round( xScale.invert(coords[0])),  // Takes the pixel number to convert to number
+                y: Math.round( yScale.invert(coords[1]))
+            };
+
+            dataset.push(newData);   // Push data to our array
+
+            svg.selectAll("circle")  // For new circle, go through the update process
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr(circleAttrs)  // Get attributes from circleAttrs var
+                .on("mouseover", handleMouseOver)
+                .on("mouseout", handleMouseOut);
+            })
+
+            // Create Event Handlers for mouse
+        function handleMouseOver(d, i) {  // Add interactivity
+
+        // Use D3 to select element, change color and size
+        d3.select(this).attr({
+            fill: "orange",
+            r: radius * 2
+        });
+
+        // Specify where to put label of text
+        svg.append("text").attr({
+            // Create an id for text so we can select it later for removing on mouseout
+            id: "t" + d.x + "-" + d.y + "-" + i,  
+                x: function() { return xScale(d.x) - 30; },
+                y: function() { return yScale(d.y) - 15; },
+            })
+            .text(function() {
+            return "("+[d.x, d.y]+")";  // Value of the text
+            });
+        }
+
+        function handleMouseOut(d, i) {
+        // Use D3 to select element, change color back to normal
+        d3.select(this).attr({
+            fill: "red",
+            r: radius
+        });
+
+        // Select text by id and then remove
+        d3.select("#t" + d.x + "-" + d.y + "-" + i).remove();  // Remove text location
+        }
+    </script>
+    </body>
+</html>     
